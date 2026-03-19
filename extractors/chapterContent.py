@@ -1,9 +1,9 @@
 # chapterContent.py
 import requests
 from bs4 import BeautifulSoup
-from req_config import bypass_get
+from req_config import bypass_get_async
 
-def extract_chapter_content(chapter_url):
+async def extract_chapter_content(chapter_url):
     """
     Giữ nguyên 100% logic cũ:
     - Tìm div có class "long-text no-select text-justify"
@@ -12,7 +12,7 @@ def extract_chapter_content(chapter_url):
         • nếu không có → lấy text
     """
     try:
-        html = bypass_get(chapter_url)
+        html = await bypass_get_async(chapter_url)
         if not html:
             return None
             
@@ -32,9 +32,6 @@ def extract_chapter_content(chapter_url):
         else:
             print("Text box not found in the page.")
             return None
-    except requests.exceptions.RequestException as req_err:
-        print(f"Request error: {req_err}")
-        return None
     except Exception as err:
         print(f"Error fetching chapter content from {chapter_url}: {err}")
         return None

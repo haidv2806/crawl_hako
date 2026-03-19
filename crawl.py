@@ -138,29 +138,55 @@ class VolumeChapterImporter:
 
         print(f"📂 Tìm thấy {len(volumes)} volume trong truyện ID {self.book_id}")
 
+    async def _process_volume_chapters(self, client: httpx.AsyncClient, volume_id: int, chapters: list):
+        """Processes chapters for a specific volume sequentially."""
+        for chap in chapters:
+            name = chap["chapterName"]
+            url = chap["chapterLink"]
+
+            print(f"  ⬇️ Đang crawl (Vol ID {volume_id}): {name}")
+            
+            # Giữ delay để tránh bị chặn (rate limit)
+            await asyncio.sleep(6) 
+
+            lines = await extract_chapter_content(url)
+            if lines is None or len(lines) == 0:
+                print(f"  ⚠️ Bỏ qua (trống) (Vol ID {volume_id}): {name}")
+                continue
+
+            await self.create_chapter(client, volume_id, name, lines)
+
+    async def run(self):
+        await self.init()
+        volumes_data = extract_chapter_in_volume(self.soup)
+        
+        if not volumes_data:
+            print("⚠️ Không lấy được danh sách chapter!")
+            return
+
+        print(f"📂 Tìm thấy {len(volumes_data)} volume trong truyện ID {self.book_id}")
+
+        # 1. Tạo tất cả các volume tuần tự ngay lập tức
+        print("⏳ Đang tạo các volume tuần tự...")
+        for vol in volumes_data:
+            vol_name = self.sanitize(vol.get("volume", "") or "Tập chính")
+            volume_id = await self.create_volume(vol_name)
+            if volume_id:
+                vol["volume_id"] = volume_id
+            else:
+                print(f"❌ Lỗi tạo volume '{vol_name}', sẽ không crawl chapters cho volume này.")
+                vol["volume_id"] = None
+
+        # 2. Chạy song song việc tạo chapter trong các volume khác nhau
+        print("⏳ Đang bắt đầu crawl chapters song song giữa các volume...")
         async with httpx.AsyncClient(timeout=120) as client:
-            for vol in volumes:
-                vol_name = self.sanitize(vol.get("volume", "") or "Tập chính")
-                
-                volume_id = await self.create_volume(vol_name)
-                if not volume_id:
-                    print(f"⏩ Bỏ qua các chapter của volume '{vol_name}' do lỗi tạo volume.")
-                    continue
-
-                for chap in vol["chapters"]:
-                    name = chap["chapterName"]
-                    url = chap["chapterLink"]
-
-                    print(f"  ⬇️ Đang crawl: {name}")
-                    
-                    await asyncio.sleep(6) 
-
-                    lines = extract_chapter_content(url)
-                    if lines is None or len(lines) == 0:
-                        print(f"  ⚠️ Bỏ qua (trống): {name}")
-                        continue
-
-                    await self.create_chapter(client, volume_id, name, lines)
+            tasks = []
+            for vol in volumes_data:
+                if vol.get("volume_id"):
+                    tasks.append(self._process_volume_chapters(client, vol["volume_id"], vol["chapters"]))
+            
+            if tasks:
+                await asyncio.gather(*tasks)
 
         print(f"🏁 HOÀN TẤT import book_id = {self.book_id}")
 
