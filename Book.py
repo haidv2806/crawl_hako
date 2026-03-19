@@ -6,15 +6,15 @@ from docx import Document
 import time
 import re
 
-from image import extract_image
-from name import extract_name
-from gerners import extract_gerners  # Typos corrected
-from author import extract_author
-from illustrator import extract_illustrator
-from status import extract_status
-from description import extract_description
-from chapterInVolume import extract_chapter_in_volume
-from chapterContent import extract_chapter_content
+from extractors.image import extract_image
+from extractors.name import extract_name
+from extractors.gerners import extract_gerners  # Typos corrected
+from extractors.author import extract_author
+from extractors.illustrator import extract_illustrator
+from extractors.status import extract_status
+from extractors.description import extract_description
+from extractors.chapterInVolume import extract_chapter_in_volume
+from extractors.chapterContent import extract_chapter_content
 
 class Book:
     def __init__(self, url) -> None:
@@ -182,8 +182,8 @@ class Book:
 
 
 url = "https://docln.net/truyen/259-toi-la-nhen-thi-sao"
-postURL = "http://localhost:3000"
+from config import BASE_URL
 book = Book(url)
 
 # Gửi tất cả dữ liệu về cuốn sách, các tập, và chương tới API localhost
-book.save_all_to_database(postURL)
+book.save_all_to_database(BASE_URL)

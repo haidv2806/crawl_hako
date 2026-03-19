@@ -13,13 +13,18 @@ pip install -r requirements.txt
 ## Các file chính
 
 - `Book.py`: Chứa class `Book` thực hiện việc lấy thông tin truyện (tên, tác giả, mô tả, ảnh bìa, các chương/tập) từ một URL cụ thể và lưu các chương vào file `.docx` cũng như đẩy trực tiếp lên server.
-- `crawl.py`: Script dùng `asyncio` và `httpx` để import dữ liệu cho một danh sách các truyện (sử dụng JWT token để xác thực với API).
-- Các module con (`author.py`, `chapterContent.py`, `description.py`, `image.py`, ...): Hỗ trợ bóc tách (extract) các thành phần cụ thể của truyện từ mã nguồn HTML qua BeautifulSoup.
+- `crawl.py`: Script dùng `asyncio` và `httpx` để import dữ liệu cho một danh sách các truyện.
+- `config.py`: Tệp chứa các cấu hình chung lặp lại (ví dụ JWT Token, Server URL).
+- Thư mục `extractors/` (chứa các module con như `author.py`, `chapterContent.py`, `description.py`, `image.py`, ...): Hỗ trợ bóc tách (extract) các thành phần cụ thể của truyện từ mã nguồn HTML qua BeautifulSoup.
 
 ## Hướng dẫn sử dụng
 
+# Tạo và kích hoạt virtual environment
+python -m venv myenv
+myenv\Scripts\activate      # Windows
+
 1. **Cấu hình API gốc**:
-   Kiểm tra và sửa các biến `BASE_URL`, `postURL`, và `JWT_TOKEN` trong các file `crawl.py` và `Book.py` nếu cần thiết (mặc định đang gọi đến `http://localhost:3000`).
+   Kiểm tra và sửa các biến `BASE_URL`, `JWT_TOKEN` trong file `config.py` nếu cần thiết (mặc định đang gọi đến `http://localhost:3000`).
 
 2. **Chạy module cơ bản (lấy 1 truyện)**:
    Mở và sửa file `Book.py` (ở cuối file) để đặt link truyện cần lấy, sau đó chạy:

@@ -7,16 +7,11 @@ import httpx
 from bs4 import BeautifulSoup
 
 # DÙNG ĐÚNG HÀM CỦA BẠN
-from chapterInVolume import extract_chapter_in_volume
-from chapterContent import extract_chapter_content   
+from extractors.chapterInVolume import extract_chapter_in_volume
+from extractors.chapterContent import extract_chapter_content   
 
 # ================== CẤU HÌNH ==================
-JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJqdGkiOiI3ZjNkMzljNS0xM2FjLTQxOTQtYTMyOC00MjAyMWQ5NWU2MGEiLCJpYXQiOjE3NjQwODg2NTEsImV4cCI6MTc2NjY4MDY1MX0.aHE0VfxuAcV9oaa6wi8zV4_KSq6KatKJAyXB7_d4Emk"
-BASE_URL = "http://localhost:3000"
-
-HEADERS = {
-    "Authorization": f"Bearer {JWT_TOKEN}"
-}
+from config import BASE_URL, HEADERS, JWT_TOKEN
 
 # (book_id, url_truyện)
 JOBS = [
