@@ -1,0 +1,27 @@
+# Environments
+myenv/
+pocy/
+venv/
+env/
+.env
+.venv
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary or local files
+*.md~
+temp_*.md
+*.docx
+*.csv
+
+# Caches
+.pytest_cache/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
