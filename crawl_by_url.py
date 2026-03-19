@@ -20,11 +20,17 @@ from extractors.gerners import extract_gerners
 async def download_image(url: str, save_path: str) -> bool:
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.get(url, timeout=30)
-            if resp.status_code == 200:
-                with open(save_path, "wb") as f:
-                    f.write(resp.content)
-                return True
+            for _ in range(3):
+                resp = await client.get(url, timeout=30)
+                if resp.status_code == 429:
+                    print("[Image] ⏳ Gặp 429 Too Many Requests, chờ 30 giây...")
+                    await asyncio.sleep(30)
+                    continue
+                if resp.status_code == 200:
+                    with open(save_path, "wb") as f:
+                        f.write(resp.content)
+                    return True
+                break
     except Exception as e:
         print(f"Lỗi tải ảnh cover: {e}")
     return False
@@ -118,12 +124,27 @@ async def process_custom_url(book_url: str):
     # 1. Tải HTML trang truyện
     print("⏳ Đang tải thông tin trang...")
     async with httpx.AsyncClient(timeout=30) as client:
-        try:
-            r = await client.get(book_url, headers={"User-Agent": "Mozilla/5.0"})
-            r.raise_for_status()
-            soup = BeautifulSoup(r.text, 'html.parser')
-        except Exception as e:
-            print(f"❌ Không thể tải trang truyện: {e}")
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                r = await client.get(book_url, headers={"User-Agent": "Mozilla/5.0"})
+                if r.status_code == 429:
+                    print("⏳ Gặp lỗi 429 Too Many Requests, chờ 30s rồi thử lại...")
+                    await asyncio.sleep(30)
+                    continue
+                r.raise_for_status()
+                soup = BeautifulSoup(r.text, 'html.parser')
+                break
+            except Exception as e:
+                # Handle httpx HTTPStatusError explicitly if needed
+                if hasattr(e, 'response') and e.response is not None and e.response.status_code == 429:
+                    print("⏳ Gặp lỗi 429 Too Many Requests, chờ 30s rồi thử lại...")
+                    await asyncio.sleep(30)
+                    continue
+                print(f"❌ Không thể tải trang truyện: {e}")
+                return
+        else:
+            print("❌ Gặp lỗi 429 quá nhiều lần, bỏ qua truyện.")
             return
 
     # 2. Bóc tách dữ liệu sử dụng các modules đã xây dựng sẵn trong BookCrawl

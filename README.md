@@ -38,6 +38,12 @@ myenv\Scripts\activate      # Windows
    python crawl.py
    ```
 
+4. **Chạy module crawl theo trang (bất đồng bộ - async)**:
+   Mở file `crawl_page.py` và sửa tham số `--url`, `--start`, `--end` phù hợp với nhu cầu. Sau đó chạy:
+   ```bash
+   python crawl_page.py --url "https://docln.sbs/danh-sach?truyendich=1&sapxep=top" --start 1 --end 10
+   ```
+
 ## Lưu ý
 
 - Các phiên bản Word document (.docx) sẽ được cấu hình lưu vào một thư mục cứng như `U:/Book/...` trong file `Book.py`. Hãy điều chỉnh lại đường dẫn cho phù hợp với máy của bạn.

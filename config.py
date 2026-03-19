@@ -2,8 +2,9 @@
 # Chứa các thông tin cấu hình dùng chung cho dự án
 
 # ================== CẤU HÌNH API ==================
-JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJqdGkiOiIxNWQwYjNlMi05NGEyLTRiZmYtOGExZi0zM2E0NDNkNzgzMzkiLCJpYXQiOjE3NzM3NzY3NzYsImV4cCI6MTc3NjM2ODc3Nn0.YTBkJXIgyglT4biDKsjX2KwFLmiYjAfH2Yy2lONEi8Q"
+JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJqdGkiOiI0MmRjZDQ2OC1lMTQ1LTQwY2MtOWZiNy03YzFjNTNlZjEzNGUiLCJpYXQiOjE3NzM5MTc5NTAsImV4cCI6MTc3NjUwOTk1MH0.1bGYi2wxzYxqSkrPdtRSHoHiaPNTlhl-xUXPWhz-7z4"
 BASE_URL = "http://localhost:3000"
+# BASE_URL = "https://e-books.info.vn"
 
 HEADERS = {
     "Authorization": f"Bearer {JWT_TOKEN}"
