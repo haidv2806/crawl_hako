@@ -18,6 +18,8 @@ pip install -r requirements.txt
 - Thư mục `extractors/` (chứa các module con như `author.py`, `chapterContent.py`, `description.py`, `image.py`, ...): Hỗ trợ bóc tách (extract) các thành phần cụ thể của truyện từ mã nguồn HTML qua BeautifulSoup.
 
 ## Hướng dẫn sử dụng
+# kích hoạt docker
+docker compose up -d
 
 # Tạo và kích hoạt virtual environment
 python -m venv myenv

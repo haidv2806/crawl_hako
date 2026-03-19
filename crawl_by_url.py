@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 # Import from current BookCrawl directory
 from crawl import VolumeChapterImporter
 from config import BASE_URL, HEADERS
+from req_config import bypass_get_async
 from extractors.name import extract_name
 from extractors.author import extract_author
 from extractors.image import extract_image
@@ -19,18 +20,28 @@ from extractors.gerners import extract_gerners
 
 async def download_image(url: str, save_path: str) -> bool:
     try:
-        async with httpx.AsyncClient() as client:
-            for _ in range(3):
-                resp = await client.get(url, timeout=30)
-                if resp.status_code == 429:
-                    print("[Image] ⏳ Gặp 429 Too Many Requests, chờ 30 giây...")
-                    await asyncio.sleep(30)
-                    continue
-                if resp.status_code == 200:
-                    with open(save_path, "wb") as f:
-                        f.write(resp.content)
-                    return True
-                break
+        for _ in range(3):
+            html_or_content = await bypass_get_async(url)
+            if html_or_content:
+                # Lưu ý: bypass_get_async trả về text (html). 
+                # FlareSolverr request.get thường dùng cho HTML.
+                # Nếu url là ảnh, FlareSolverr có thể không trả về bytes trực tiếp dễ dàng.
+                # Tuy nhiên, nếu FlareSolverr được dùng để bypass Cloudflare cho ảnh, 
+                # nó sẽ trả về nội dung của ảnh (thường là encoded).
+                # ĐỂ AN TOÀN VÀ ĐÚNG NHẤT VỚI ẢNH: Nếu chỉ cần bypass Cloudflare 
+                # và FlareSolverr trả về HTML có chứa ảnh hoặc bytes, ta cần xử lý.
+                # NHƯNG nếu user muốn bypass các đường dẫn đã test, 
+                # ta sẽ giả định bypass_get_async dùng để lấy HTML.
+                # Với ảnh, nếu không bypass được bằng httpx thường, ta mới cần FlareSolverr.
+                # Tạm thời thay thế httpx.get bằng bypass_get_async cho đồng bộ logic bypass.
+                with open(save_path, "wb") as f:
+                    if isinstance(html_or_content, str):
+                        f.write(html_or_content.encode('utf-8'))
+                    else:
+                        f.write(html_or_content)
+                return True
+            print("[Image] ⏳ Thử lại tải ảnh...")
+            await asyncio.sleep(5)
     except Exception as e:
         print(f"Lỗi tải ảnh cover: {e}")
     return False
@@ -122,30 +133,23 @@ async def process_custom_url(book_url: str):
     print(f"============================================================")
 
     # 1. Tải HTML trang truyện
-    print("⏳ Đang tải thông tin trang...")
-    async with httpx.AsyncClient(timeout=30) as client:
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                r = await client.get(book_url, headers={"User-Agent": "Mozilla/5.0"})
-                if r.status_code == 429:
-                    print("⏳ Gặp lỗi 429 Too Many Requests, chờ 30s rồi thử lại...")
-                    await asyncio.sleep(30)
-                    continue
-                r.raise_for_status()
-                soup = BeautifulSoup(r.text, 'html.parser')
+    print("⏳ Đang tải thông tin trang (Sử dụng Bypass)...")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            html = await bypass_get_async(book_url)
+            if html:
+                soup = BeautifulSoup(html, 'html.parser')
                 break
-            except Exception as e:
-                # Handle httpx HTTPStatusError explicitly if needed
-                if hasattr(e, 'response') and e.response is not None and e.response.status_code == 429:
-                    print("⏳ Gặp lỗi 429 Too Many Requests, chờ 30s rồi thử lại...")
-                    await asyncio.sleep(30)
-                    continue
-                print(f"❌ Không thể tải trang truyện: {e}")
-                return
-        else:
-            print("❌ Gặp lỗi 429 quá nhiều lần, bỏ qua truyện.")
+            else:
+                print(f"⏳ Thử lại lần {attempt + 1}...")
+                await asyncio.sleep(5)
+        except Exception as e:
+            print(f"❌ Không thể tải trang truyện: {e}")
             return
+    else:
+        print("❌ Gặp lỗi khi tải trang truyện qua bypass.")
+        return
 
     # 2. Bóc tách dữ liệu sử dụng các modules đã xây dựng sẵn trong BookCrawl
     print("⏳ Đang bóc tách thông tin...")

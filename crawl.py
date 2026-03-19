@@ -12,6 +12,7 @@ from extractors.chapterContent import extract_chapter_content
 
 # ================== CẤU HÌNH ==================
 from config import BASE_URL, HEADERS, JWT_TOKEN
+from req_config import bypass_get_async
 
 # (book_id, url_truyện)
 JOBS = [
@@ -38,11 +39,12 @@ class VolumeChapterImporter:
         self.soup = None
 
     async def init(self):
-        async with httpx.AsyncClient(timeout=30) as client:
-            headers = {"User-Agent": "Mozilla/5.0"}
-            r = await client.get(self.novel_url, headers=headers)
-            r.raise_for_status()
-            self.soup = BeautifulSoup(r.text, 'html.parser')
+        print(f"⏳ Khởi tạo Importer (Bypass) cho: {self.novel_url}")
+        html = await bypass_get_async(self.novel_url)
+        if html:
+            self.soup = BeautifulSoup(html, 'html.parser')
+        else:
+            raise Exception(f"Không thể tải trang truyện qua bypass: {self.novel_url}")
         return self
 
     def sanitize(self, text: str) -> str:

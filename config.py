@@ -6,6 +6,10 @@ JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJqdGkiOiI0Mm
 BASE_URL = "http://localhost:3000"
 # BASE_URL = "https://e-books.info.vn"
 
+# ================== CẤU HÌNH BYPASS ==================
+FLARESOLVERR_URL = "http://localhost:8191/v1"
+BROWSER_TIMEOUT = 60000 # 1 phút
+
 HEADERS = {
     "Authorization": f"Bearer {JWT_TOKEN}"
 }

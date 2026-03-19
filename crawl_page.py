@@ -4,6 +4,7 @@ import httpx
 import argparse
 from bs4 import BeautifulSoup
 from crawl_by_url import process_custom_url
+from req_config import bypass_get_async
 
 async def crawl_page(base_url, start_page, end_page):
     # Cào 3 truyện 1 lần
@@ -21,54 +22,45 @@ async def crawl_page(base_url, start_page, end_page):
         else:
             page_url = f"{base_url}&page={page}" if "?" in base_url else f"{base_url}?page={page}"
             
-        print(f"\n📂 Đang quét trang: {page_url}")
+        print(f"\n📂 Đang quét trang (Bypass): {page_url}")
         
-        async with httpx.AsyncClient(timeout=30) as client:
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    resp = await client.get(page_url, headers={"User-Agent": "Mozilla/5.0"})
-                    if resp.status_code == 429:
-                        print("⏳ Gặp lỗi 429 khi tải danh sách, chờ 30s...")
-                        await asyncio.sleep(30)
-                        continue
-                    resp.raise_for_status()
+        max_retries = 3
+        html = None
+        for attempt in range(max_retries):
+            try:
+                html = await bypass_get_async(page_url)
+                if html:
                     break
-                except Exception as e:
-                    if hasattr(e, 'response') and e.response is not None and e.response.status_code == 429:
-                        print("⏳ Gặp lỗi 429 khi tải danh sách, chờ 30s...")
-                        await asyncio.sleep(30)
-                        continue
-                    print(f"❌ Lỗi tải trang danh sách: {e}")
-                    break
-            else:
-                print("❌ Bỏ qua trang này do gặp 429 quá nhiều.")
-                continue
-            
-            if 'resp' not in locals() or resp.status_code != 200:
-                print("❌ Không lấy được HTML hợp lệ, bỏ qua trang.")
-                continue
-                
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            # Lấy danh sách phần tử div có class thumb_attr series-title
-            series_titles = soup.find_all('div', class_='thumb_attr series-title')
-            book_urls = []
-            
-            for st in series_titles:
-                a_tag = st.find('a')
-                if a_tag and a_tag.get('href'):
-                    href = a_tag['href']
-                    full_url = href if href.startswith("http") else "https://docln.sbs" + href
-                    book_urls.append(full_url)
-            
-            if not book_urls:
-                print("⚠️ Không tìm thấy truyện nào trên trang này. Có thể đã hết trang.")
+                print(f"⏳ Thử lại lần {attempt + 1}...")
+                await asyncio.sleep(5)
+            except Exception as e:
+                print(f"❌ Lỗi tải trang danh sách: {e}")
                 break
-                
-            print(f"📚 Tìm thấy {len(book_urls)} truyện trên trang {page}. Bắt đầu cào (3 truyện / lần)...")
+        
+        if not html:
+            print("❌ Không lấy được HTML hợp lệ, bỏ qua trang.")
+            continue
             
-            tasks = [process_with_semaphore(url) for url in book_urls]
-            await asyncio.gather(*tasks)
+        soup = BeautifulSoup(html, 'html.parser')
+        # Lấy danh sách phần tử div có class thumb_attr series-title
+        series_titles = soup.find_all('div', class_='thumb_attr series-title')
+        book_urls = []
+        
+        for st in series_titles:
+            a_tag = st.find('a')
+            if a_tag and a_tag.get('href'):
+                href = a_tag['href']
+                full_url = href if href.startswith("http") else "https://docln.sbs" + href
+                book_urls.append(full_url)
+        
+        if not book_urls:
+            print("⚠️ Không tìm thấy truyện nào trên trang này. Có thể đã hết trang.")
+            break
+            
+        print(f"📚 Tìm thấy {len(book_urls)} truyện trên trang {page}. Bắt đầu cào (3 truyện / lần)...")
+        
+        tasks = [process_with_semaphore(url) for url in book_urls]
+        await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script quét danh sách truyện docln.sbs theo trang")

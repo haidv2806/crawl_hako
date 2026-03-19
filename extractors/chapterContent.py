@@ -1,6 +1,7 @@
 # chapterContent.py
 import requests
 from bs4 import BeautifulSoup
+from req_config import bypass_get
 
 def extract_chapter_content(chapter_url):
     """
@@ -11,9 +12,11 @@ def extract_chapter_content(chapter_url):
         • nếu không có → lấy text
     """
     try:
-        response = requests.get(chapter_url, timeout=20)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
+        html = bypass_get(chapter_url)
+        if not html:
+            return None
+            
+        soup = BeautifulSoup(html, 'html.parser')
         text_rows = []
         textBox = soup.find('div', class_="long-text no-select text-justify")
         
