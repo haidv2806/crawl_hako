@@ -35,7 +35,7 @@ def create_session(proxy):
             print(f"❌ Failed to create session: {res_json.get('message')}")
             return None
     except Exception as e:
-        print(f"❌ Error creating session: {e}")
+        print(f"❌ Error creating session: {e.__class__.__name__} - {e.args}")
         return None
 
 def destroy_session(proxy):
@@ -46,7 +46,7 @@ def destroy_session(proxy):
     session_id = proxy_sessions.get(proxy_url)
     
     if not session_id:
-        return
+        return False # Return False if no session_id to destroy
     
     payload = {
         "cmd": "sessions.destroy",
@@ -69,7 +69,7 @@ def destroy_session(proxy):
             print(f"❌ Failed to destroy session: {res_json.get('message')}")
             return False
     except Exception as e:
-        print(f"❌ Error destroying session: {e}")
+        print(f"❌ Error destroying session: {e.__class__.__name__} - {e.args}")
         return False
 
 def get_or_create_session(proxy):
@@ -92,12 +92,18 @@ def bypass_get(url: str, max_retries: int = 3):
         proxy = get_next_proxy()
         session_id = get_or_create_session(proxy)
         
+        # Nếu không thể tạo session, thử lại với proxy khác hoặc chuyển sang fallback
+        if not session_id:
+            print(f"[Bypass] Không thể tạo session cho proxy {proxy.get('url') if proxy else 'direct'}. Thử lại...")
+            time.sleep(5)
+            continue
+
         payload = {
             "cmd": "request.get",
             "url": url,
             "maxTimeout": BROWSER_TIMEOUT,
             "session": session_id,
-            "proxy": proxy
+            # "proxy": proxy  # Đã loại bỏ theo hướng dẫn trước
         }
 
         try:
@@ -125,16 +131,23 @@ def bypass_get(url: str, max_retries: int = 3):
                 time.sleep(30)
                 continue
             else:
+                # Nếu không phải lỗi block, có thể là lỗi khác, thoát vòng lặp retry
                 break
 
         except Exception as e:
-            print(f"[Bypass] Lỗi kết nối (Lần {attempt+1}): {e}")
+            print(f"[Bypass] Lỗi kết nối (Lần {attempt+1}): {e.__class__.__name__} - {e.args}")
             time.sleep(5)
 
     # --- FALLBACK: dùng IP thật (không proxy) ---
     print("[Bypass] ⚠️ Thử lại bằng IP máy thật (không proxy)...")
     
     session_id = get_or_create_session(None)
+    
+    # Nếu không thể tạo session fallback
+    if not session_id:
+        print("[Bypass] ❌ Không thể tạo session fallback.")
+        return None
+
     payload = {
         "cmd": "request.get",
         "url": url,
@@ -156,7 +169,7 @@ def bypass_get(url: str, max_retries: int = 3):
         print(f"[Bypass] ❌ Fallback cũng fail: {res_json.get('message')}")
 
     except Exception as e:
-        print(f"[Bypass] ❌ Lỗi fallback: {e}")
+        print(f"[Bypass] ❌ Lỗi fallback: {e.__class__.__name__} - {e.args}")
 
     return None
 
@@ -169,12 +182,18 @@ async def bypass_get_async(url: str, max_retries: int = 3):
         proxy = get_next_proxy()
         session_id = get_or_create_session(proxy)
         
+        # Nếu không thể tạo session, thử lại với proxy khác hoặc chuyển sang fallback
+        if not session_id:
+            print(f"[Bypass] Không thể tạo session Async cho proxy {proxy.get('url') if proxy else 'direct'}. Thử lại...")
+            await asyncio.sleep(5)
+            continue
+
         payload = {
             "cmd": "request.get",
             "url": url,
             "maxTimeout": BROWSER_TIMEOUT,
             "session": session_id,
-            "proxy": proxy
+            # "proxy": proxy  # Đã loại bỏ theo hướng dẫn trước
         }
 
         try:
@@ -199,16 +218,23 @@ async def bypass_get_async(url: str, max_retries: int = 3):
                     await asyncio.sleep(30)
                     continue
                 else:
+                    # Nếu không phải lỗi block, có thể là lỗi khác, thoát vòng lặp retry
                     break
 
         except Exception as e:
-            print(f"[Bypass] Lỗi kết nối Async (Lần {attempt+1}): {e}")
+            print(f"[Bypass] Lỗi kết nối Async (Lần {attempt+1}): {e.__class__.__name__} - {e.args}")
             await asyncio.sleep(5)
 
     # --- FALLBACK ---
     print("[Bypass] ⚠️ Async fallback về IP máy thật...")
     
     session_id = get_or_create_session(None)
+    
+    # Nếu không thể tạo session fallback
+    if not session_id:
+        print("[Bypass] ❌ Không thể tạo session Async fallback.")
+        return None
+
     payload = {
         "cmd": "request.get",
         "url": url,
@@ -227,6 +253,6 @@ async def bypass_get_async(url: str, max_retries: int = 3):
             print(f"[Bypass] ❌ Async fallback fail: {res_json.get('message')}")
 
     except Exception as e:
-        print(f"[Bypass] ❌ Async fallback lỗi: {e}")
+        print(f"[Bypass] ❌ Async fallback lỗi: {e.__class__.__name__} - {e.args}")
 
     return None

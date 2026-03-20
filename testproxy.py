@@ -1,7 +1,7 @@
 import requests
 
 # ===== PROXY RAW =====
-raw_proxy = "31.59.20.176:6754:zixtfewq:e82j30zrhhpd"
+raw_proxy = "45.61.96.150:6130:smyqziak:iqpff2ivwfi9"
 
 # ===== TARGET URL =====
 url = "https://docln.sbs/truyen/1028-youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e"

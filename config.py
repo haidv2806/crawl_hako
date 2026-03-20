@@ -11,7 +11,7 @@ BASE_URL = "https://e-books.info.vn"
 
 # ================== CẤU HÌNH BYPASS ==================
 FLARESOLVERR_URL = "http://localhost:8191/v1"
-BROWSER_TIMEOUT = 60000 # 1 phút
+BROWSER_TIMEOUT = 120000 # 2 phút
 
 # ================== CẤU HÌNH SKIP URLs ==================
 SKIP_URLS_FILE = Path(__file__).parent / "skip_urls.json"
@@ -22,7 +22,16 @@ HEADERS = {
 }
 
 raw_proxies = [
-
+    "45.61.96.150:6130:smyqziak:iqpff2ivwfi9",
+    "64.137.121.71:6326:smyqziak:iqpff2ivwfi9",
+    "82.24.236.90:7900:smyqziak:iqpff2ivwfi9",
+    "45.159.53.38:7410:smyqziak:iqpff2ivwfi9",
+    "154.6.121.19:5986:smyqziak:iqpff2ivwfi9",
+    "45.61.96.117:6097:smyqziak:iqpff2ivwfi9",
+    "45.38.67.11:6943:smyqziak:iqpff2ivwfi9",
+    "31.58.19.223:6495:smyqziak:iqpff2ivwfi9",
+    "45.39.50.245:6663:smyqziak:iqpff2ivwfi9",
+    "45.147.187.69:6442:smyqziak:iqpff2ivwfi9",
 ]
 
 # Parse proxies into objects
