@@ -23,6 +23,11 @@ async def extract_chapter_content(chapter_url):
         if textBox:
             paragraphs = textBox.findAll('p')
             for paragraph in paragraphs:
+                # Bỏ qua nếu <p> có display: none
+                style = paragraph.get('style', '')
+                if 'display' in style and 'none' in style:
+                    continue
+                
                 img_tag = paragraph.find('img')
                 if img_tag:
                     continue

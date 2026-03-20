@@ -8,7 +8,7 @@ from req_config import bypass_get_async
 
 async def crawl_page(base_url, start_page, end_page):
     # Cào 3 truyện 1 lần
-    semaphore = asyncio.Semaphore(3)
+    semaphore = asyncio.Semaphore(1)
     
     async def process_with_semaphore(book_url):
         async with semaphore:

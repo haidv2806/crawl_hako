@@ -25,3 +25,6 @@ temp_*.md
 .idea/
 *.swp
 *.swo
+*.txt
+/logs
+
