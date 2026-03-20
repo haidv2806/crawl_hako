@@ -5,6 +5,7 @@ import argparse
 from bs4 import BeautifulSoup
 from crawl_by_url import process_custom_url
 from req_config import bypass_get_async
+from config import should_skip_url, add_skip_url, print_skip_urls_stats
 
 async def crawl_page(base_url, start_page, end_page):
     # Cào 3 truyện 1 lần
@@ -51,15 +52,29 @@ async def crawl_page(base_url, start_page, end_page):
             if a_tag and a_tag.get('href'):
                 href = a_tag['href']
                 full_url = href if href.startswith("http") else "https://docln.sbs" + href
-                book_urls.append(full_url)
+                
+                # Kiểm tra xem URL đã được xử lý chưa
+                if should_skip_url(full_url):
+                    print(f"⏭️ Bỏ qua (đã xử lý): {full_url}")
+                else:
+                    book_urls.append(full_url)
         
         if not book_urls:
-            print("⚠️ Không tìm thấy truyện nào trên trang này. Có thể đã hết trang.")
+            print("⚠️ Không tìm thấy truyện mới trên trang này. Có thể đã hết trang hoặc tất cả đã được xử lý.")
             break
             
-        print(f"📚 Tìm thấy {len(book_urls)} truyện trên trang {page}. Bắt đầu cào (3 truyện / lần)...")
+        print(f"📚 Tìm thấy {len(book_urls)} truyện chưa xử lý trên trang {page}. Bắt đầu cào...")
         
-        tasks = [process_with_semaphore(url) for url in book_urls]
+        async def process_wrapper(url):
+            """Wrapper để thêm URL vào skip list sau khi xử lý"""
+            try:
+                await process_with_semaphore(url)
+                # Thêm vào skip list sau khi xử lý thành công
+                add_skip_url(url)
+            except Exception as e:
+                print(f"❌ Lỗi xử lý URL {url}: {e}")
+        
+        tasks = [process_wrapper(url) for url in book_urls]
         await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
@@ -71,4 +86,8 @@ if __name__ == "__main__":
     
     if os.name == 'nt':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    
     asyncio.run(crawl_page(args.url, args.start, args.end))
+    
+    # In thống kê skip URLs
+    print_skip_urls_stats()

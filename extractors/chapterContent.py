@@ -1,45 +1,78 @@
 # chapterContent.py
+import asyncio
 import requests
 from bs4 import BeautifulSoup
 from req_config import bypass_get_async
 
-async def extract_chapter_content(chapter_url):
+async def extract_chapter_content(chapter_url, max_retries=3):
     """
     Giữ nguyên 100% logic cũ:
     - Tìm div có class "long-text no-select text-justify"
     - Với mỗi <p>:
         • nếu có <img> → lấy src của ảnh
         • nếu không có → lấy text
+    
+    Thêm retry logic: nếu lấy được trống, thử lại tối đa 3 lần
     """
-    try:
-        html = await bypass_get_async(chapter_url)
-        if not html:
-            return None
-            
-        soup = BeautifulSoup(html, 'html.parser')
-        text_rows = []
-        textBox = soup.find('div', class_="long-text no-select text-justify")
-        
-        if textBox:
-            paragraphs = textBox.findAll('p')
-            for paragraph in paragraphs:
-                # Bỏ qua nếu <p> có display: none
-                style = paragraph.get('style', '')
-                if 'display' in style and 'none' in style:
+    for attempt in range(1, max_retries + 1):
+        try:
+            html = await bypass_get_async(chapter_url)
+            if not html:
+                if attempt < max_retries:
+                    print(f"  🔄 Thử lại ({attempt}/{max_retries}): HTML rỗng, đợi 2 giây...")
+                    await asyncio.sleep(2)
                     continue
+                else:
+                    return None
                 
-                img_tag = paragraph.find('img')
-                if img_tag:
+            soup = BeautifulSoup(html, 'html.parser')
+            text_rows = []
+            textBox = soup.find('div', class_="long-text no-select text-justify")
+            
+            if textBox:
+                paragraphs = textBox.findAll('p')
+                for paragraph in paragraphs:
+                    # Bỏ qua nếu <p> có display: none
+                    style = paragraph.get('style', '')
+                    if 'display' in style and 'none' in style:
+                        continue
+                    
+                    img_tag = paragraph.find('img')
+                    if img_tag:
+                        continue
+                    else:                                    # không có ảnh → lấy text
+                        text = paragraph.get_text(strip=True)
+                        if text:  # chỉ thêm text không rỗng
+                            text_rows.append(text)
+                
+                # Nếu có content, trả về luôn
+                if text_rows:
+                    return text_rows
+                # Nếu không có content, thử lại
+                elif attempt < max_retries:
+                    print(f"  🔄 Thử lại ({attempt}/{max_retries}): Nội dung trống, đợi 2 giây...")
+                    await asyncio.sleep(2)
                     continue
-                else:                                    # không có ảnh → lấy text
-                    text_rows.append(paragraph.get_text(strip=True))
-            return text_rows
-        else:
-            print("Text box not found in the page.")
-            return None
-    except Exception as err:
-        print(f"Error fetching chapter content from {chapter_url}: {err}")
-        return None
+                else:
+                    return None
+            else:
+                if attempt < max_retries:
+                    print(f"  🔄 Thử lại ({attempt}/{max_retries}): Text box không tìm thấy, đợi 2 giây...")
+                    await asyncio.sleep(2)
+                    continue
+                else:
+                    print("Text box not found in the page.")
+                    return None
+        except Exception as err:
+            if attempt < max_retries:
+                print(f"  🔄 Thử lại ({attempt}/{max_retries}): Lỗi {err}, đợi 2 giây...")
+                await asyncio.sleep(2)
+                continue
+            else:
+                print(f"Error fetching chapter content from {chapter_url}: {err}")
+                return None
+    
+    return None
 
 
 # Thay vì lưu Word → lưu thành file Markdown

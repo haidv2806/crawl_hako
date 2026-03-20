@@ -1,14 +1,21 @@
 # config.py
 # Chứa các thông tin cấu hình dùng chung cho dự án
 
+import json
+from pathlib import Path
+
 # ================== CẤU HÌNH API ==================
 JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJqdGkiOiI3MzYyOTQ1My1kNWNkLTRhY2EtOWIxOC1hOGFiODZlYmE5MGMiLCJpYXQiOjE3NzM5NDg5MTIsImV4cCI6MTc3NjU0MDkxMn0.5fneRW3udySHM3nN9fkQ4k7gocmzJ3WbJNpbJdYEzwU"
-BASE_URL = "http://localhost:3000"
-# BASE_URL = "https://e-books.info.vn"
+# BASE_URL = "http://localhost:3000"
+BASE_URL = "https://e-books.info.vn"
 
 # ================== CẤU HÌNH BYPASS ==================
 FLARESOLVERR_URL = "http://localhost:8191/v1"
 BROWSER_TIMEOUT = 60000 # 1 phút
+
+# ================== CẤU HÌNH SKIP URLs ==================
+SKIP_URLS_FILE = Path(__file__).parent / "skip_urls.json"
+_skip_urls = set()
 
 HEADERS = {
     "Authorization": f"Bearer {JWT_TOKEN}"
@@ -37,3 +44,100 @@ def get_next_proxy():
     proxy = PROXIES[_proxy_index]
     _proxy_index = (_proxy_index + 1) % len(PROXIES)
     return proxy
+
+# ==================== SKIP URLs MANAGEMENT ====================
+def _load_skip_urls():
+    """Load skip URLs from file"""
+    global _skip_urls
+    if SKIP_URLS_FILE.exists():
+        try:
+            with open(SKIP_URLS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                _skip_urls = set(data.get('urls', []))
+        except Exception as e:
+            print(f"⚠️ Error loading skip_urls.json: {e}")
+            _skip_urls = set()
+    else:
+        _skip_urls = set()
+
+def _save_skip_urls():
+    """Save skip URLs to file"""
+    try:
+        with open(SKIP_URLS_FILE, 'w', encoding='utf-8') as f:
+            json.dump({
+                'urls': sorted(list(_skip_urls)),
+                'count': len(_skip_urls)
+            }, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"⚠️ Error saving skip_urls.json: {e}")
+
+def should_skip_url(url: str) -> bool:
+    """Check if URL should be skipped"""
+    global _skip_urls
+    if not _skip_urls:
+        _load_skip_urls()
+    return url in _skip_urls
+
+def add_skip_url(url: str):
+    """Add URL to skip list"""
+    global _skip_urls
+    if not _skip_urls:
+        _load_skip_urls()
+    
+    if url not in _skip_urls:
+        _skip_urls.add(url)
+        _save_skip_urls()
+        print(f"✅ Added to skip list: {url}")
+    else:
+        print(f"ℹ️ Already in skip list: {url}")
+
+def add_skip_urls_batch(urls: list):
+    """Add multiple URLs to skip list"""
+    global _skip_urls
+    if not _skip_urls:
+        _load_skip_urls()
+    
+    added = []
+    for url in urls:
+        if url not in _skip_urls:
+            _skip_urls.add(url)
+            added.append(url)
+    
+    if added:
+        _save_skip_urls()
+        print(f"✅ Added {len(added)} URLs to skip list")
+    
+    return len(added)
+
+def get_skip_urls_count() -> int:
+    """Get count of skip URLs"""
+    global _skip_urls
+    if not _skip_urls:
+        _load_skip_urls()
+    return len(_skip_urls)
+
+def print_skip_urls_stats():
+    """Print skip URLs statistics"""
+    global _skip_urls
+    if not _skip_urls:
+        _load_skip_urls()
+    
+    print("\n" + "="*60)
+    print("📋 SKIP URLs STATISTICS")
+    print("="*60)
+    print(f"Total skipped URLs: {len(_skip_urls)}")
+    
+    if _skip_urls and len(_skip_urls) <= 10:
+        print("\nSkipped URLs:")
+        for url in sorted(list(_skip_urls)):
+            print(f"  - {url}")
+    elif _skip_urls:
+        print("\nFirst 10 skipped URLs:")
+        for url in sorted(list(_skip_urls))[:10]:
+            print(f"  - {url}")
+        print(f"  ... and {len(_skip_urls) - 10} more")
+    
+    print("="*60 + "\n")
+
+# Load skip URLs on startup
+_load_skip_urls()
