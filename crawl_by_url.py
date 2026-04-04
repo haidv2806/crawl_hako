@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 
 # Import from current BookCrawl directory
 from crawl import VolumeChapterImporter
-from config import BASE_URL, HEADERS
+from config import BASE_URL, HEADERS, get_next_proxy
 from req_config import bypass_get_async
 from extractors.name import extract_name
 from extractors.author import extract_author
@@ -17,33 +17,46 @@ from extractors.image import extract_image
 from extractors.description import extract_description
 from extractors.status import extract_status
 from extractors.gerners import extract_gerners
+from extractors.illustrator import extract_illustrator
 
 async def download_image(url: str, save_path: str) -> bool:
+    import requests
     try:
-        for _ in range(3):
-            html_or_content = await bypass_get_async(url)
-            if html_or_content:
-                # Lưu ý: bypass_get_async trả về text (html). 
-                # FlareSolverr request.get thường dùng cho HTML.
-                # Nếu url là ảnh, FlareSolverr có thể không trả về bytes trực tiếp dễ dàng.
-                # Tuy nhiên, nếu FlareSolverr được dùng để bypass Cloudflare cho ảnh, 
-                # nó sẽ trả về nội dung của ảnh (thường là encoded).
-                # ĐỂ AN TOÀN VÀ ĐÚNG NHẤT VỚI ẢNH: Nếu chỉ cần bypass Cloudflare 
-                # và FlareSolverr trả về HTML có chứa ảnh hoặc bytes, ta cần xử lý.
-                # NHƯNG nếu user muốn bypass các đường dẫn đã test, 
-                # ta sẽ giả định bypass_get_async dùng để lấy HTML.
-                # Với ảnh, nếu không bypass được bằng httpx thường, ta mới cần FlareSolverr.
-                # Tạm thời thay thế httpx.get bằng bypass_get_async cho đồng bộ logic bypass.
-                with open(save_path, "wb") as f:
-                    if isinstance(html_or_content, str):
-                        f.write(html_or_content.encode('utf-8'))
-                    else:
-                        f.write(html_or_content)
-                return True
+        for attempt in range(3):
+            proxy_info = get_next_proxy()
+            proxies = None
+            if proxy_info:
+                host_port = proxy_info['url'].split('//')[1]
+                proxy_url = f"http://{proxy_info['username']}:{proxy_info['password']}@{host_port}"
+                proxies = {
+                    "http": proxy_url,
+                    "https": proxy_url
+                }
+            
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": "https://docln.net/"
+            }
+            
+            try:
+                # Sử dụng requests chạy trong thread để xử lý proxy bình thường (không qua FlareSolverr)
+                resp = await asyncio.to_thread(
+                    requests.get, url, proxies=proxies, headers=headers, timeout=30
+                )
+                
+                if resp.status_code == 200:
+                    with open(save_path, "wb") as f:
+                        f.write(resp.content)
+                    return True
+                else:
+                    print(f"[Image] ⏳ Lần {attempt+1} tải bị lỗi HTTP {resp.status_code}")
+            except Exception as e:
+                print(f"[Image] ⏳ Lỗi exception lần {attempt+1}: {e}")
+                
             print("[Image] ⏳ Thử lại tải ảnh...")
             await asyncio.sleep(5)
     except Exception as e:
-        print(f"Lỗi tải ảnh cover: {e}")
+        print(f"Lỗi báo cáo từ tải ảnh cover: {e}")
     return False
 
 CATEGORY_MAPPING = {
@@ -79,6 +92,9 @@ def api_create_book(info: dict, cover_path: str) -> int | None:
         ("status",      status_mapped),
         ("description", info.get("description", "")),
     ]
+    
+    if info.get("artist"):
+        data.append(("artists", json.dumps([info.get("artist")], ensure_ascii=False)))
     
     # Categories
     categories = info.get("categories", [])
@@ -156,6 +172,7 @@ async def process_custom_url(book_url: str):
     book_info = {
         "name": extract_name(soup),
         "author": extract_author(soup),
+        "artist": extract_illustrator(soup),
         "image_url": extract_image(soup),
         "status": extract_status(soup),
         "description": extract_description(soup),
@@ -168,6 +185,7 @@ async def process_custom_url(book_url: str):
 
     print(f"📖 Tên truyện: {book_info['name']}")
     print(f"✍️ Tác giả: {book_info['author']}")
+    print(f"🎨 Họa sĩ: {book_info['artist']}")
     print(f"🏷️ Thể loại: {', '.join(book_info['categories']) if book_info['categories'] else 'Không có'}")
 
     # 3. Tải ảnh bìa

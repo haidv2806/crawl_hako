@@ -8,10 +8,11 @@ def extract_description (soup):
         var = soup.find('div', class_='summary-content')
 
         if var:
-            description = var.find("p").contents[0]
+            # Lấy toàn bộ nội dung HTML bên trong div (bao gồm các thẻ <p>)
+            description = var.decode_contents().strip()
             return description
         else:
-            print("no author found")
+            print("no description found")
             return None  
     except Exception as err:
         print("Lỗi ở đâu đó" , err)
