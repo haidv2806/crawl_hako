@@ -82,8 +82,6 @@ def api_create_book(info: dict, cover_path: str) -> int | None:
     status_mapped = "ongoing"
     if "hoàn thành" in raw_status or "completed" in raw_status:
         status_mapped = "completed"
-    elif "tạm ngưng" in raw_status or "hidden" in raw_status:
-        status_mapped = "hidden"
         
     desc = info.get("description", "")
     if len(desc) > 1000:
