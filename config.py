@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 # ================== CẤU HÌNH API ==================
-JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJqdGkiOiI3MzYyOTQ1My1kNWNkLTRhY2EtOWIxOC1hOGFiODZlYmE5MGMiLCJpYXQiOjE3NzM5NDg5MTIsImV4cCI6MTc3NjU0MDkxMn0.5fneRW3udySHM3nN9fkQ4k7gocmzJ3WbJNpbJdYEzwU"
+JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozOSwianRpIjoiMGNkNTlmZWUtNWEwZC00OWFmLTk5OGEtNTljYmNmYTVjYmVjIiwiaWF0IjoxNzc1Mzk4MDY0LCJleHAiOjE3Nzc5OTAwNjR9.pWbRf_amiQitIvyoWlu_G2BW42Z8cL989WSvoqpWXTs"
 # BASE_URL = "http://localhost:3000"
 BASE_URL = "https://e-books.info.vn"
 

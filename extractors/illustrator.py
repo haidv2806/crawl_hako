@@ -2,27 +2,24 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def extract_illustrator (soup):
+def extract_illustrator(soup):
     try:
-        # Find the div with the specific class and extract the style attribute
-        var = soup.findAll('span', class_='info-value')[1]
-
-        if var:
-            illustrator = var.find("a").contents[0]
-
-            return illustrator
-        else:
-            print("no author found")
-            return None  
-    except Exception as err:
-        print("Lỗi ở đâu đó" , err)
+        # Tìm tất cả các div có class 'info-item'
+        info_items = soup.find_all('div', class_='info-item')
+        
+        for item in info_items:
+            name_span = item.find('span', class_='info-name')
+            if name_span and 'Họa sĩ:' in name_span.get_text():
+                value_span = item.find('span', class_='info-value')
+                if value_span:
+                    # Lấy text từ thẻ 'a' nếu có, không thì lấy trực tiếp từ value_span
+                    a_tag = value_span.find('a')
+                    if a_tag:
+                        return a_tag.get_text().strip()
+                    return value_span.get_text().strip()
+        
+        print("no illustrator found")
         return None
-
-# # Send a GET request to fetch the content of the page
-# response = requests.get("https://docln.net/truyen/259-toi-la-nhen-thi-sao")
-
-# # Parse the content with BeautifulSoup
-# soup = BeautifulSoup(response.content, 'html.parser')
-
-# test = extract_illustrator(soup)
-# print(test)
+    except Exception as err:
+        print("Lỗi ở extract_illustrator:", err)
+        return None
