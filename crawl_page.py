@@ -13,7 +13,7 @@ async def crawl_page(base_url, start_page, end_page):
     
     async def process_with_semaphore(book_url):
         async with semaphore:
-            await process_custom_url(book_url)
+            return await process_custom_url(book_url)
 
     for page in range(start_page, end_page + 1):
         # Nối page param
@@ -68,11 +68,14 @@ async def crawl_page(base_url, start_page, end_page):
         async def process_wrapper(url):
             """Wrapper để thêm URL vào skip list sau khi xử lý"""
             try:
-                await process_with_semaphore(url)
+                success = await process_with_semaphore(url)
                 # Thêm vào skip list sau khi xử lý thành công
-                add_skip_url(url)
+                if success:
+                    add_skip_url(url)
+                else:
+                    print(f"⚠️ Trình xử lý báo lỗi hoặc dừng khẩn cấp cho {url}, KHÔNG ghi vào skip_list.")
             except Exception as e:
-                print(f"❌ Lỗi xử lý URL {url}: {e}")
+                print(f"❌ Lỗi ngoại lệ xử lý URL {url}: {e}")
         
         tasks = [process_wrapper(url) for url in book_urls]
         await asyncio.gather(*tasks)

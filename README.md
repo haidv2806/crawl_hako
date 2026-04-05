@@ -43,7 +43,7 @@ myenv\Scripts\activate      # Windows
 4. **Chạy module crawl theo trang (bất đồng bộ - async)**:
    Mở file `crawl_page.py` và sửa tham số `--url`, `--start`, `--end` phù hợp với nhu cầu. Sau đó chạy:
    ```bash
-   python crawl_page.py --url "https://docln.sbs/danh-sach?truyendich=1&sapxep=top" --start 1 --end 10
+   python crawl_page.py --url "https://docln.sbs/danh-sach?truyendich=1sapxep=top" --start 1 --end 10
    ```
 
 ## Lưu ý

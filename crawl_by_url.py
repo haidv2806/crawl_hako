@@ -85,12 +85,16 @@ def api_create_book(info: dict, cover_path: str) -> int | None:
     elif "tạm ngưng" in raw_status or "hidden" in raw_status:
         status_mapped = "hidden"
         
+    desc = info.get("description", "")
+    if len(desc) > 1000:
+        desc = desc[:995] + "..."
+
     data = [
         ("book_name",   info.get("name", "Unknown")),
         ("sub_names",   json.dumps([], ensure_ascii=False)),
         ("authors",     json.dumps([info.get("author", "Unknown")], ensure_ascii=False)),
         ("status",      status_mapped),
-        ("description", info.get("description", "")),
+        ("description", desc),
     ]
     
     if info.get("artist"):
@@ -162,10 +166,10 @@ async def process_custom_url(book_url: str):
                 await asyncio.sleep(5)
         except Exception as e:
             print(f"❌ Không thể tải trang truyện: {e}")
-            return
+            return False
     else:
         print("❌ Gặp lỗi khi tải trang truyện qua bypass.")
-        return
+        return False
 
     # 2. Bóc tách dữ liệu sử dụng các modules đã xây dựng sẵn trong BookCrawl
     print("⏳ Đang bóc tách thông tin...")
@@ -181,7 +185,7 @@ async def process_custom_url(book_url: str):
 
     if not book_info["name"]:
         print("❌ Không thể lấy tên truyện. URL có hợp lệ không?")
-        return
+        return False
 
     print(f"📖 Tên truyện: {book_info['name']}")
     print(f"✍️ Tác giả: {book_info['author']}")
@@ -212,7 +216,7 @@ async def process_custom_url(book_url: str):
 
     if not backend_book_id:
         print("❌ Tạo sách thất bại, ngưng tiến trình crawl chương.")
-        return
+        return False
         
     print(f"✅ Đã tạo sách thành công trên server! ID: {backend_book_id}")
 
@@ -224,8 +228,10 @@ async def process_custom_url(book_url: str):
     try:
         await importer.run()
         print(f"🎉 Hoàn thành crawl dữ liệu cho: {book_info['name']}")
+        return True
     except Exception as e:
         print(f"🔥 Có lỗi xảy ra trong tiến trình lấy chương: {e}")
+        return False
 
 
 async def main():
