@@ -22,8 +22,14 @@ def extract_chapter_in_volume(soup):
                 
                 chapter_divs = vol.findAll("div", class_="chapter-name")
                 for chapter in chapter_divs:
-                    chapter_name = chapter.get_text(strip=True)
-                    chapter_link = chapter.find('a', href=True)['href']
+                    a_tag = chapter.find('a')
+                    if a_tag:
+                        chapter_name = a_tag.get_text(strip=True)
+                        chapter_link = a_tag['href']
+                    else:
+                        chapter_name = chapter.get_text(strip=True)
+                        chapter_link = chapter.find('a', href=True)['href'] if chapter.find('a', href=True) else ""
+
                     volume_info["chapters"].append({
                         "chapterName": chapter_name,
                         "chapterLink": "https://docln.sbs" + chapter_link

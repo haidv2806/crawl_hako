@@ -2,7 +2,16 @@ import requests
 import httpx
 import time
 import asyncio
-from config import FLARESOLVERR_URL, BROWSER_TIMEOUT, get_next_proxy
+from config import FLARESOLVERR_URL, BROWSER_TIMEOUT, get_next_proxy, REQ_AT_ONCE
+
+# Semaphore để giới hạn số lượng request đồng thời tới FlareSolverr
+_request_semaphore = None
+
+def get_request_semaphore():
+    global _request_semaphore
+    if _request_semaphore is None:
+        _request_semaphore = asyncio.Semaphore(REQ_AT_ONCE)
+    return _request_semaphore
 
 # ================== SESSION MANAGEMENT ==================
 # Lưu session ID cho mỗi proxy: {"proxy_url": "session_id"}
@@ -177,23 +186,70 @@ async def bypass_get_async(url: str, max_retries: int = 3):
     """
     Async: Sử dụng session cho proxy, retry nếu fail, xóa session nếu bị block
     """
-    # --- Thử với proxy + session ---
-    for attempt in range(max_retries):
-        proxy = get_next_proxy()
-        session_id = get_or_create_session(proxy)
+    async with get_request_semaphore():
+        # --- Thử với proxy + session ---
+        for attempt in range(max_retries):
+            proxy = get_next_proxy()
+            session_id = get_or_create_session(proxy)
+            
+            # Nếu không thể tạo session, thử lại với proxy khác hoặc chuyển sang fallback
+            if not session_id:
+                print(f"[Bypass] Không thể tạo session Async cho proxy {proxy.get('url') if proxy else 'direct'}. Thử lại...")
+                await asyncio.sleep(5)
+                continue
+
+            payload = {
+                "cmd": "request.get",
+                "url": url,
+                "maxTimeout": BROWSER_TIMEOUT,
+                "session": session_id,
+                # "proxy": proxy  # Đã loại bỏ theo hướng dẫn trước
+            }
+
+            try:
+                async with httpx.AsyncClient(timeout=(BROWSER_TIMEOUT / 1000) + 10) as client:
+                    response = await client.post(FLARESOLVERR_URL, json=payload)
+                    res_json = response.json()
+
+                    if res_json.get("status") == "ok":
+                        return res_json["solution"]["response"]
+
+                    message = res_json.get("message", "")
+                    print(f"[Bypass] Lỗi Async (Lần {attempt+1}): {message}")
+
+                    if proxy:
+                        print(f"[Bypass] Proxy used: {proxy.get('url')}")
+
+                    # Nếu bị block, xóa session cũ
+                    if "Cloudflare has blocked this request" in message or "IP is banned" in message:
+                        print(f"⚠️ Proxy bị block, xóa session và tạo lại...")
+                        destroy_session(proxy)
+                        print("⏳ Chờ 30s trước khi retry...")
+                        await asyncio.sleep(30)
+                        continue
+                    else:
+                        # Nếu không phải lỗi block, có thể là lỗi khác, thoát vòng lặp retry
+                        break
+
+            except Exception as e:
+                print(f"[Bypass] Lỗi kết nối Async (Lần {attempt+1}): {e.__class__.__name__} - {e.args}")
+                await asyncio.sleep(5)
+
+        # --- FALLBACK ---
+        print("[Bypass] ⚠️ Async fallback về IP máy thật...")
         
-        # Nếu không thể tạo session, thử lại với proxy khác hoặc chuyển sang fallback
+        session_id = get_or_create_session(None)
+        
+        # Nếu không thể tạo session fallback
         if not session_id:
-            print(f"[Bypass] Không thể tạo session Async cho proxy {proxy.get('url') if proxy else 'direct'}. Thử lại...")
-            await asyncio.sleep(5)
-            continue
+            print("[Bypass] ❌ Không thể tạo session Async fallback.")
+            return None
 
         payload = {
             "cmd": "request.get",
             "url": url,
             "maxTimeout": BROWSER_TIMEOUT,
-            "session": session_id,
-            # "proxy": proxy  # Đã loại bỏ theo hướng dẫn trước
+            "session": session_id
         }
 
         try:
@@ -204,55 +260,9 @@ async def bypass_get_async(url: str, max_retries: int = 3):
                 if res_json.get("status") == "ok":
                     return res_json["solution"]["response"]
 
-                message = res_json.get("message", "")
-                print(f"[Bypass] Lỗi Async (Lần {attempt+1}): {message}")
-
-                if proxy:
-                    print(f"[Bypass] Proxy used: {proxy.get('url')}")
-
-                # Nếu bị block, xóa session cũ
-                if "Cloudflare has blocked this request" in message or "IP is banned" in message:
-                    print(f"⚠️ Proxy bị block, xóa session và tạo lại...")
-                    destroy_session(proxy)
-                    print("⏳ Chờ 30s trước khi retry...")
-                    await asyncio.sleep(30)
-                    continue
-                else:
-                    # Nếu không phải lỗi block, có thể là lỗi khác, thoát vòng lặp retry
-                    break
+                print(f"[Bypass] ❌ Async fallback fail: {res_json.get('message')}")
 
         except Exception as e:
-            print(f"[Bypass] Lỗi kết nối Async (Lần {attempt+1}): {e.__class__.__name__} - {e.args}")
-            await asyncio.sleep(5)
+            print(f"[Bypass] ❌ Async fallback lỗi: {e.__class__.__name__} - {e.args}")
 
-    # --- FALLBACK ---
-    print("[Bypass] ⚠️ Async fallback về IP máy thật...")
-    
-    session_id = get_or_create_session(None)
-    
-    # Nếu không thể tạo session fallback
-    if not session_id:
-        print("[Bypass] ❌ Không thể tạo session Async fallback.")
         return None
-
-    payload = {
-        "cmd": "request.get",
-        "url": url,
-        "maxTimeout": BROWSER_TIMEOUT,
-        "session": session_id
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=(BROWSER_TIMEOUT / 1000) + 10) as client:
-            response = await client.post(FLARESOLVERR_URL, json=payload)
-            res_json = response.json()
-
-            if res_json.get("status") == "ok":
-                return res_json["solution"]["response"]
-
-            print(f"[Bypass] ❌ Async fallback fail: {res_json.get('message')}")
-
-    except Exception as e:
-        print(f"[Bypass] ❌ Async fallback lỗi: {e.__class__.__name__} - {e.args}")
-
-    return None

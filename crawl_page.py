@@ -8,7 +8,7 @@ from req_config import bypass_get_async
 from config import should_skip_url, add_skip_url, print_skip_urls_stats
 
 async def crawl_page(base_url, start_page, end_page):
-    # Cào 3 truyện 1 lần
+    # Cào 1 truyện 1 lần
     semaphore = asyncio.Semaphore(1)
     
     async def process_with_semaphore(book_url):
@@ -59,9 +59,13 @@ async def crawl_page(base_url, start_page, end_page):
                 else:
                     book_urls.append(full_url)
         
-        if not book_urls:
-            print("⚠️ Không tìm thấy truyện mới trên trang này. Có thể đã hết trang hoặc tất cả đã được xử lý.")
+        if not series_titles:
+            print("🛑 Trang này không có bất kỳ truyện nào. Dừng quét (có thể đã hết danh sách).")
             break
+
+        if not book_urls:
+            print("⏭️ Tất cả truyện trên trang này đã được xử lý. Chuyển sang trang tiếp theo...")
+            continue
             
         print(f"📚 Tìm thấy {len(book_urls)} truyện chưa xử lý trên trang {page}. Bắt đầu cào...")
         

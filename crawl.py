@@ -16,19 +16,7 @@ from req_config import bypass_get_async
 
 # (book_id, url_truyện)
 JOBS = [
-    (5, "https://docln.sbs/truyen/1879-kuma-kuma-kuma-bear"),
-    (6, "https://docln.sbs/truyen/5442-trash-of-the-counts-family"),
-    (7, "https://docln.sbs/truyen/8997-nageki-no-bourei-wa-intai-shitai-saijiyaku-hanta-ni-yoru-saikiyou-patei-ikusei-jutsu"),
-    (8, "https://docln.sbs/truyen/8960-im-the-evil-lord-of-an-intergalactic-empire"),
-    (9, "https://docln.sbs/truyen/3311-nhan-vat-phu-tieu-thuyet"),
-    (10, "https://docln.sbs/truyen/447-reincarnated-as-a-dragons-egg-lets-aim-to-be-the-strongest"),
-    (11, "https://docln.sbs/truyen/219-dieu-hanh-tu-than-den-the-gioi-song-song"),
-    (12, "https://docln.sbs/truyen/16466-throne-of-magical-arcana"),
-    (13, "https://docln.sbs/truyen/11586-shimotsuki-wa-mob-ga-suki"),
-    (14, "https://docln.sbs/truyen/787-tensei-shitara-kendeshita"),
-    (15, "https://docln.sbs/truyen/767-arifureta-shokugyou-de-sekai-saikyou"),
-    (16, "https://docln.sbs/truyen/4981-otonari-no-tenshi-sama-ni-itsu-no-aida-ni-ka-dame-ningen-ni-sareteiru-ken"),
-    (17, "https://docln.sbs/truyen/214-konjiki-no-word-master"),
+    (1499, "https://docln.sbs/truyen/18301-co-ve-nhu-toi-da-tai-sinh-thanh-mot-chien-binh-vo-danh-trong-tro-choi-nhat-ban-gia-tuong-co-phan-tam-toi-nhung-phu-nu-xung-quanh-toi-thi-khong-on-lam-va-toi-co-linh-cam-khong-lanh-ve-viec-nay")
 ]
 
 # ======================================================

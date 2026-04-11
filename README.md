@@ -47,7 +47,12 @@ myenv\Scripts\activate      # Windows
    ```
 5. **1 truyện duy nhất**:
    ```bash
-   python crawl_by_url.py --url "https://docln.sbs/truyen/10574-tales-of-reincarnation-in-maydare"
+   python crawl_by_url.py --url "https://docln.sbs/ai-dich/22635-ta-la-mot-le-quy-danh-chinh-ngon-thuan-sao-co-the-cam-chiu-khuat-phuc-ke-khac"
+   ```
+
+6. **1 chương duy nhất**:
+   ```bash
+   python crawl_chapter.py --url "https://docln.sbs/truyen/7773-i-was-caught-up-in-a-hero-summoning-but-that-world-is-at-peace"
    ```
 ## Lưu ý
 

@@ -12,6 +12,7 @@ BASE_URL = "https://e-books.info.vn"
 # ================== CẤU HÌNH BYPASS ==================
 FLARESOLVERR_URL = "http://localhost:8191/v1"
 BROWSER_TIMEOUT = 120000 # 2 phút
+REQ_AT_ONCE = 10 # Số lượng request tối đa đồng thời tới FlareSolverr
 
 # ================== CẤU HÌNH SKIP URLs ==================
 SKIP_URLS_FILE = Path(__file__).parent / "skip_urls.json"
