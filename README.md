@@ -47,7 +47,7 @@ myenv\Scripts\activate      # Windows
    ```
 5. **1 truyện duy nhất**:
    ```bash
-   python crawl_by_url.py --url "https://docln.sbs/ai-dich/22635-ta-la-mot-le-quy-danh-chinh-ngon-thuan-sao-co-the-cam-chiu-khuat-phuc-ke-khac"
+   python crawl_by_url.py --url "https://docln.sbs/truyen/16603-toumei-na-yoru-ni-kakeru-kimi-to-menimienai-koi-wo-shita"
    ```
 
 6. **1 chương duy nhất**:
